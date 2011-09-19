@@ -2,10 +2,11 @@
 
 import urllib
 import httplib
-import simplejson
+try :
+  import simplejson as json
+except ImportError:
+  import json
 from base64 import b64encode
-
-DEBUG = True
 
 def parametalize(params_candidate={}) :
   if params_candidate.has_key('self') :
@@ -47,7 +48,7 @@ class DiigoApi(object) :
   """
   Requirements
   =======================
-  * `simplejson`_
+  * `simplejson`_ if your python < 2.5
   * `pit`_ **optional**. See diigotest.py. You might love it ;)
 
   .. _`simplejson`: http://pypi.python.org/pypi?:action=display&name=simplejson
@@ -66,6 +67,10 @@ class DiigoApi(object) :
   Notes
   =======================
   You might get 503 Error, because of Diigo's API limit.
+  
+  v.0.2
+  ^^^^^^^^^^^^^^^^^^
+  **Update Bookmark** is deprecated and raise DeprecationWarning.
 
   Usage
   =======================
@@ -123,18 +128,6 @@ class DiigoApi(object) :
 
     * url
 
-  Update Bookmark
-  --------------------
-  ::
-
-    >>> result = api.bookmark_update(title='', description='',url='', shared='yes', tags='')
-    >>> print result['message']
-    updated 1 bookmark
-
-  * required arguments
-
-    * url
-
   Delete Bookmark
   --------------------
   ::
@@ -148,13 +141,12 @@ class DiigoApi(object) :
     * url
 
   """
-  user = ''
-  password = ''
-  server = 'api2.diigo.com:80'
+  server = 'secure.diigo.com:443'
   
-  def __init__(self, user='', password='') :
+  def __init__(self, user='', password='', debug=False) :
     self.user = user
     self.password = password
+    self.debug = debug
     if not self.user:
       raise ValueError, 'You must pass your username and password.'
     self.headers = {"Content-type": "application/x-www-form-urlencoded",
@@ -176,9 +168,10 @@ class DiigoApi(object) :
 
   def bookmark_update(self, title='', description='',url='',
                          shared='yes', tags=''):
-    if url == None or len(url) == 0:
-      raise ValueError, 'url must specified'
-    return self._handle_bookmark(parametalize(locals()), 'PUT')
+    raise DeprecationWarning('''Doese this API work?''')
+    # if url == None or len(url) == 0:
+    #   raise ValueError, 'url must specified'
+    # return self._handle_bookmark(parametalize(locals()), 'POST')
 
   def bookmark_delete(self, url=''):
     if url == None or len(url) == 0:
@@ -186,30 +179,30 @@ class DiigoApi(object) :
     return self._handle_bookmark(parametalize(locals()), 'DELETE')
   
   def _handle_bookmark(self, param={}, method='GET') :
-    if DEBUG :
+    if self.debug :
       print 'DEBUG: %s._handle_bookmark->%s' % (self.__class__, method)
-      print '     :%s' % (param)
+      print ' ARGS:%s' % (param)
       print ''
     params = urllib.urlencode(param)
-    conn = httplib.HTTPConnection(self.server)
+    conn = httplib.HTTPSConnection(self.server)
     try:
       if method == 'GET':
-        conn.request(method, "/bookmarks?%s" % params, {}, self.headers)
+        conn.request(method, "/api/v2/bookmarks?%s" % params, "", self.headers)
         response = conn.getresponse()
-        bookmarks = [DiigoBookmark(d) for d in simplejson.load(response)]
+        bookmarks = [DiigoBookmark(d) for d in json.load(response)]
         return bookmarks
       else :
-        conn.request(method, "/bookmarks" , params, self.headers)
+        conn.request(method, "/api/v2/bookmarks" , params, self.headers)
         response = conn.getresponse()
         if response.status >= 400:
-          if DEBUG:
-            print response.read()
+          if self.debug:
+            print "ERROR: STATUS:%d\n       %s" % (response.status, response.read())
           raise PyDiigoError(response.status,
                             '',
                             method,
                             params)
-        result = simplejson.load(response)
-        if DEBUG:
+        result = json.load(response)
+        if self.debug:
             print result
         return result
     finally:
@@ -238,7 +231,7 @@ class PyDiigoError(Exception) :
                                                   self.message, self.method, self.param)
 
 
-VERSION = '0.1'
+VERSION = '0.2'
 AUTHOR = 'makoto tsuyuki'
 AUTHOR_EMAIL = 'mtsuyuki_at_gmail_dot_com'
 PROJECT_URL = 'http://www.tsuyukimakoto.com/project/pydiigo/'

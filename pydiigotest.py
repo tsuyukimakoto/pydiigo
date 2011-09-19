@@ -34,45 +34,35 @@ class TestApi(unittest.TestCase) :
     diigo_password = None
     if not diigo_user:
       try :
-        # http://pypi.python.org/pypi/pit/0.2
+        # http://pypi.python.org/pypi/pit/0.3
         # http://www.youtube.com/watch?v=VeqYJXCm3Dw&eurl=http://d.hatena.ne.jp/a2c/20081016/1224097042&feature=player_embedded
         from pit import Pit
         diigo_config = Pit.get('diigo.com',{'require' : {'username':'Your diigo username','password':'Your diigo password'}})
         diigo_user, diigo_password = diigo_config['username'],diigo_config['password']
       except ImportError: pass
-    self.api = DiigoApi(diigo_user, diigo_password)
+    self.api = DiigoApi(diigo_user, diigo_password, debug=True)
     try:
       self.api.bookmark_delete(url='http://www.tsuyukimakoto.com/')
     except PyDiigoError:pass
 
   def test_crud(self):
-    time.sleep(60)
-    result = self.api.bookmark_add(title='tsuyukimakoto.com',url='http://www.tsuyukimakoto.com/', tags='pydiigotest')
-    self.assert_(result['message'] == 'added 1 bookmarks')
-    time.sleep(60)
+    result = self.api.bookmark_add(title='tsuyukimakoto',url='http://www.tsuyukimakoto.com/', tags='pydiigotest')
+    self.assert_(result['message'] == 'Saved 1 bookmark(s)')
     bookmark = self.api.bookmarks_find(url='http://www.tsuyukimakoto.com', users='tsuyukimakoto')[0]
-    self.assert_(bookmark.title == 'tsuyukimakoto.com')
+    self.assert_(bookmark.title == 'tsuyukimakoto')
     self.assert_(bookmark.url == 'http://www.tsuyukimakoto.com')
     self.assert_(bookmark.tags == 'pydiigotest')
-    time.sleep(60)
+    time.sleep(5)
     bookmark = self.api.bookmarks_find(tags='pydiigotest', users='tsuyukimakoto')[0]
     self.assert_(bookmark.tags == 'pydiigotest')
-    time.sleep(60)
-    result = self.api.bookmark_update(title='was spam-ish', url='http://www.tsuyukimakoto.com/', tags='test,django,python')
-    self.assert_(result['message'] == 'updated 1 bookmarks')
-    time.sleep(60)
-    bookmark = self.api.bookmarks_find(url='http://www.tsuyukimakoto.com/', users='tsuyukimakoto')[0]
-    self.assert_(bookmark.title == 'was spam-ish')
-    self.assert_(bookmark.url == 'http://www.tsuyukimakoto.com')
-    self.assert_(bookmark.tags == 'test,django,python')
-    time.sleep(60)
+    try:
+      result = self.api.bookmark_update(title='testtest', url='http://www.tsuyukimakoto.com/', tags='test,django,python')
+      fail()
+    except DeprecationWarning:
+      pass
     result = self.api.bookmark_delete(url='http://www.tsuyukimakoto.com/')
-    self.assert_(result['message'] == 'deleted 1 bookmarks')
-    time.sleep(60)
+    self.assert_(result['message'] == 'deleted 1 bookmark(s)')
     bookmarks = self.api.bookmarks_find(tags='pydiigotest', users='tsuyukimakoto')
-    print 'length:%s' % len(bookmarks)
-    for b in bookmarks:
-        print b
     self.assert_(len(bookmarks) == 0)
 
 if __name__ == '__main__':
