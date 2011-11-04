@@ -30,7 +30,7 @@ class TestUtilityFunction(unittest.TestCase):
 class TestApi(unittest.TestCase) :
 
   def setUp(self) :
-    diigo_user = None
+    diigo_user = None 
     diigo_password = None
     if not diigo_user:
       try :
@@ -46,12 +46,13 @@ class TestApi(unittest.TestCase) :
     except PyDiigoError:pass
 
   def test_crud(self):
-    result = self.api.bookmark_add(title='tsuyukimakoto',url='http://www.tsuyukimakoto.com/', tags='pydiigotest')
+    result = self.api.bookmark_add(title='tsuyukimakoto',description='some description', url='http://www.tsuyukimakoto.com/', tags='pydiigotest')
     self.assert_(result['message'] == 'Saved 1 bookmark(s)')
     bookmark = self.api.bookmarks_find(url='http://www.tsuyukimakoto.com', users='tsuyukimakoto')[0]
     self.assert_(bookmark.title == 'tsuyukimakoto')
     self.assert_(bookmark.url == 'http://www.tsuyukimakoto.com')
     self.assert_(bookmark.tags == 'pydiigotest')
+    self.assert_(bookmark.desc == 'some description')
     time.sleep(5)
     bookmark = self.api.bookmarks_find(tags='pydiigotest', users='tsuyukimakoto')[0]
     self.assert_(bookmark.tags == 'pydiigotest')

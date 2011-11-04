@@ -164,6 +164,7 @@ class DiigoApi(object) :
                          shared='yes', tags=''):
     if url == None or len(url) == 0:
       raise ValueError, 'url must specified'
+    desc = description
     return self._handle_bookmark(parametalize(locals()), 'POST')
 
   def bookmark_update(self, title='', description='',url='',
@@ -231,7 +232,7 @@ class PyDiigoError(Exception) :
                                                   self.message, self.method, self.param)
 
 
-VERSION = '0.2'
+VERSION = '0.3'
 AUTHOR = 'makoto tsuyuki'
 AUTHOR_EMAIL = 'mtsuyuki_at_gmail_dot_com'
 PROJECT_URL = 'http://www.tsuyukimakoto.com/project/pydiigo/'
