@@ -82,13 +82,13 @@ Notes
 You might get 503 Error, because of Diigo's API limit.
 
 v.0.5
-^^^^^^^^^^^^^^^^^^
+--------------------
 api needs diigo **API KEY** generate api key via https://www.diigo.com/api_keys/new/
 
 required python version 2.6, 2.7, 3.2, 3.3
 
 v.0.2
-^^^^^^^^^^^^^^^^^^
+--------------------
 **Update Bookmark** is deprecated and raise DeprecationWarning.
 
 Usage
