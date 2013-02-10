@@ -61,97 +61,103 @@ class DiigoBookmark(dict) :
 
 class DiigoApi(object) :
   """
-  Requirements
-  =======================
-  * `pit`_ **optional**. See diigotest.py. You might love it ;)
+Requirements
+=======================
+* `pit`_ **optional**. See diigotest.py. You might love it ;)
 
-  .. _`pit`: http://pypi.python.org/pypi?:action=display&name=pit
+.. _`pit`: http://pypi.python.org/pypi?:action=display&name=pit
 
-  instllation
-  =======================
-  $ pip install pydiigo
+instllation
+=======================
+$ pip install pydiigo
 
-    or 
+  or 
 
-  Download pydiigo and extract it, then
+Download pydiigo and extract it, then
 
-  $ sudo python setup.py install
+$ sudo python setup.py install
 
-  Notes
-  =======================
-  You might get 503 Error, because of Diigo's API limit.
-  
-  v.0.2
-  ^^^^^^^^^^^^^^^^^^
-  **Update Bookmark** is deprecated and raise DeprecationWarning.
+Notes
+=======================
+You might get 503 Error, because of Diigo's API limit.
 
-  Usage
-  =======================
+v.0.5
+^^^^^^^^^^^^^^^^^^
+api needs diigo **API KEY** generate api key via https://www.diigo.com/api_keys/new/
 
-  Initialize API 
-  --------------------
-  ::
+required python version 2.6, 2.7, 3.2, 3.3
 
-    >>> from pydiigo import DiigoApi
-    >>> api = DiigoApi(user='YOUR_DIIGO_USERNAME', password='YOUR_DIIGO_PASSWORD', apikey='YOUR API KEY')
+v.0.2
+^^^^^^^^^^^^^^^^^^
+**Update Bookmark** is deprecated and raise DeprecationWarning.
 
-  Search Bookmarks
-  --------------------
-  ::
+Usage
+=======================
 
-    >>> bookmarks = api.bookmarks_find(users='DIIGO_USER_NAME')
-    >>> for bookmark in bookmarks:
-    ...   print(bookmark.title)
-    ...   print(bookmark.url)
-    ...   print(bookmark.tags)
-    ...   print(bookmark.desc)
-    ...   print('-' * 10)
+Initialize API 
+--------------------
+::
 
-  * Bookmark Structure
+  >>> from pydiigo import DiigoApi
+  >>> api = DiigoApi(user='YOUR_DIIGO_USERNAME', password='YOUR_DIIGO_PASSWORD', apikey='YOUR API KEY')
 
-    * title (string)
+Search Bookmarks
+--------------------
+::
 
-    * url (string)
+  >>> bookmarks = api.bookmarks_find(users='DIIGO_USER_NAME')
+  >>> for bookmark in bookmarks:
+  ...   print(bookmark.title)
+  ...   print(bookmark.url)
+  ...   print(bookmark.tags)
+  ...   print(bookmark.desc)
+  ...   print('-' * 10)
 
-    * user (string)
+* Bookmark Structure
 
-    * desc (string: description)
+  * title (string)
 
-    * tags (string: Seperated by comma with multiple tags.)
+  * url (string)
 
-    * shared (string: yes or no)
+  * user (string)
 
-    * created_at (string: eg.2009/03/04 02:57:09 +0000)
+  * desc (string: description)
 
-    * updated_at (string: eg.2009/03/04 02:57:09 +0000)
+  * tags (string: Seperated by comma with multiple tags.)
 
-    * comments (string array)
+  * shared (string: yes or no)
 
-    * annotations (string array)
+  * created_at (string: eg.2009/03/04 02:57:09 +0000)
 
-  Add Bookmark
-  --------------------
-  ::
+  * updated_at (string: eg.2009/03/04 02:57:09 +0000)
 
-    >>> result = api.bookmark_add(title='', description='',url='', shared='yes', tags='')
-    >>> print(result['message'])
-    added 1 bookmark
+  * comments (string array)
 
-  * required arguments
+  * annotations (string array)
 
-    * url
+Add Bookmark
+--------------------
+::
 
-  Delete Bookmark
-  --------------------
-  ::
+  >>> result = api.bookmark_add(title='', description='',url='', shared='yes', tags='')
+  >>> print(result['message'])
+  added 1 bookmark
 
-    >>> result = api.bookmark_delete(url='')
-    >>> print(result['message'])
-    updated 1 bookmark
+* required arguments
 
-  * required arguments
+  * url
 
-    * url
+Delete Bookmark
+--------------------
+::
+
+  >>> result = api.bookmark_delete(url='')
+  >>> print(result['message'])
+  updated 1 bookmark
+
+* required arguments
+
+  * url
 
   """
   server = 'secure.diigo.com:443'
@@ -269,6 +275,3 @@ PROJECT_URL = 'http://www.tsuyukimakoto.com/project/pydiigo/'
 CONTACT = '{0} or {1}'.format(PROJECT_URL, AUTHOR_EMAIL)
 DESCRIPTION = '''Python wrapper for www.diigo.com's API'''
 LONG_DESCRIPTION = DiigoApi.__doc__
-
-
-
