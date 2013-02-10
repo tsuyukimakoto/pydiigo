@@ -1,21 +1,36 @@
 # -*- coding: utf8 -*-
-
-import urllib
-import httplib
-try :
-  import simplejson as json
+import sys
+try:
+  from urllib.parse import urlencode
 except ImportError:
+  from urllib import urlencode
+try:
+  from http import client
+except ImportError:
+  import httplib as client
+try:
   import json
+except ImportError:
+  import simplejson as json
 from base64 import b64encode
 
+import logging
+
+logger = logging.getLogger('pydiigo')
+
+if isinstance(sys.version_info, tuple):
+  PY_MAJOR_VERSION = sys.version_info[0]
+else:
+  PY_MAJOR_VERSION = sys.version_info.major
+
 def parametalize(params_candidate={}) :
-  if params_candidate.has_key('self') :
+  if 'self' in params_candidate :
     del params_candidate['self']
   return set_data(params_candidate)
 
 def set_data(params_candidate) :
   param = {}
-  for key, value in params_candidate.iteritems() :
+  for key, value in params_candidate.items() :
     if value == None or value == '' or value == []:
       pass
     else:
@@ -37,7 +52,7 @@ class DiigoBookmark(dict) :
   "annotations":[]
   """
   def __init__(self, d) :
-    for key, value in d.iteritems() :
+    for key, value in d.items() :
       self[key] = value
 
   def __getattr__(self, name):
@@ -48,15 +63,13 @@ class DiigoApi(object) :
   """
   Requirements
   =======================
-  * `simplejson`_ if your python < 2.5
   * `pit`_ **optional**. See diigotest.py. You might love it ;)
 
-  .. _`simplejson`: http://pypi.python.org/pypi?:action=display&name=simplejson
   .. _`pit`: http://pypi.python.org/pypi?:action=display&name=pit
 
   instllation
   =======================
-  $ sudo easy_install pydiigo
+  $ pip install pydiigo
 
     or 
 
@@ -80,7 +93,7 @@ class DiigoApi(object) :
   ::
 
     >>> from pydiigo import DiigoApi
-    >>> api = DiigoApi(user='YOUR_DIIGO_USERNAME', password='YOUR_DIIGO_PASSWORD')
+    >>> api = DiigoApi(user='YOUR_DIIGO_USERNAME', password='YOUR_DIIGO_PASSWORD', apikey='YOUR API KEY')
 
   Search Bookmarks
   --------------------
@@ -88,11 +101,11 @@ class DiigoApi(object) :
 
     >>> bookmarks = api.bookmarks_find(users='DIIGO_USER_NAME')
     >>> for bookmark in bookmarks:
-    ...   print bookmark.title
-    ...   print bookmark.url
-    ...   print bookmark.tags
-    ...   print bookmark.desc
-    ...   print '-' * 10
+    ...   print(bookmark.title)
+    ...   print(bookmark.url)
+    ...   print(bookmark.tags)
+    ...   print(bookmark.desc)
+    ...   print('-' * 10)
 
   * Bookmark Structure
 
@@ -121,7 +134,7 @@ class DiigoApi(object) :
   ::
 
     >>> result = api.bookmark_add(title='', description='',url='', shared='yes', tags='')
-    >>> print result['message']
+    >>> print(result['message'])
     added 1 bookmark
 
   * required arguments
@@ -133,7 +146,7 @@ class DiigoApi(object) :
   ::
 
     >>> result = api.bookmark_delete(url='')
-    >>> print result['message']
+    >>> print(result['message'])
     updated 1 bookmark
 
   * required arguments
@@ -143,27 +156,40 @@ class DiigoApi(object) :
   """
   server = 'secure.diigo.com:443'
   
-  def __init__(self, user='', password='', debug=False) :
+  def __init__(self, user='', password='', apikey='', debug=False) :
     self.user = user
     self.password = password
+    self.apikey = apikey
     self.debug = debug
     if not self.user:
-      raise ValueError, 'You must pass your username and password.'
+      raise ValueError('You must pass your username, password and apikey.')
+    if PY_MAJOR_VERSION == 2:
+      auth_header = b64encode("{0}:{1}".format(self.user, self.password))
+    else:
+      auth_header = b64encode(bytes("{0}:{1}".format(self.user, self.password), 'utf8')).decode('utf8')
     self.headers = {"Content-type": "application/x-www-form-urlencoded",
                "Accept"      : "text/plain",
-               "Authorization": "Basic %s==" % b64encode("%s:%s" % (self.user, self.password)),
-               "User-agent"  : "pydiigo/%s" % (VERSION)}
+               "Authorization": "Basic {0}==".format(auth_header),
+               "User-agent"  : "pydiigo/{0}".format(VERSION)}
 
   def bookmarks_find(self, start=0, rows=50, sort=0,
                            users=None, tags='', filter='public',
                            list=None, site=None,
                            ft=None, url=None) :
+    '''
+      Diigo deleted some options(site, ft, url).
+      rows fallback to count.
+    '''
+    count = rows
+    del rows
+    if site or ft or url:
+      logger.error('Diigo removed some options(site, ft, url).')
     return self._handle_bookmark(parametalize(locals()), 'GET')
 
   def bookmark_add(self, title='', description='',url='',
                          shared='yes', tags=''):
     if url == None or len(url) == 0:
-      raise ValueError, 'url must specified'
+      raise ValueError('url must specified')
     desc = description
     return self._handle_bookmark(parametalize(locals()), 'POST')
 
@@ -176,36 +202,39 @@ class DiigoApi(object) :
 
   def bookmark_delete(self, url=''):
     if url == None or len(url) == 0:
-      raise ValueError, 'url must specified'
+      raise ValueError('url must specified')
     return self._handle_bookmark(parametalize(locals()), 'DELETE')
   
+  def _load_json(self, response):
+    body = response.read()
+    logger.debug(body)
+    if PY_MAJOR_VERSION == 2:
+      return json.loads(body)
+    else:
+      return json.loads(body.decode('utf8'))
+
   def _handle_bookmark(self, param={}, method='GET') :
-    if self.debug :
-      print 'DEBUG: %s._handle_bookmark->%s' % (self.__class__, method)
-      print ' ARGS:%s' % (param)
-      print ''
-    params = urllib.urlencode(param)
-    conn = httplib.HTTPSConnection(self.server)
+    logger.debug('{0}._handle_bookmark->{1}'.format(self.__class__, method))
+    logger.debug(' ARGS:{0}\n'.format(param))
+    param['key'] = self.apikey
+    params = urlencode(param)
+    conn = client.HTTPSConnection(self.server)
     try:
       if method == 'GET':
-        conn.request(method, "/api/v2/bookmarks?%s" % params, "", self.headers)
+        conn.request(method, "/api/v2/bookmarks?{0}".format(params), "", self.headers)
         response = conn.getresponse()
-        bookmarks = [DiigoBookmark(d) for d in json.load(response)]
+        bookmarks = [DiigoBookmark(d) for d in self._load_json(response)]
         return bookmarks
       else :
         conn.request(method, "/api/v2/bookmarks" , params, self.headers)
         response = conn.getresponse()
         if response.status >= 400:
-          if self.debug:
-            print "ERROR: STATUS:%d\n       %s" % (response.status, response.read())
+          logger.debug("ERROR: STATUS:{0}\n       {1}".format(response.status, response.read()))
           raise PyDiigoError(response.status,
                             '',
                             method,
                             params)
-        result = json.load(response)
-        if self.debug:
-            print result
-        return result
+        return self._load_json(response)
     finally:
       conn.close()
 
@@ -228,16 +257,16 @@ class PyDiigoError(Exception) :
     return self.__repr__()
 
   def __repr__(self) :
-    return '[%s:%s] %s when %s called with %s' % (self.status, PyDiigoError.STATUS[str(self.status)],
+    return '[{0}:{1}] {2} when {3} called with {4}'.format(self.status, PyDiigoError.STATUS[str(self.status)],
                                                   self.message, self.method, self.param)
 
 
-VERSION = '0.3'
+VERSION = '0.5'
 AUTHOR = 'makoto tsuyuki'
 AUTHOR_EMAIL = 'mtsuyuki_at_gmail_dot_com'
 PROJECT_URL = 'http://www.tsuyukimakoto.com/project/pydiigo/'
 
-CONTACT = '%s or %s' % (PROJECT_URL, AUTHOR_EMAIL)
+CONTACT = '{0} or {1}'.format(PROJECT_URL, AUTHOR_EMAIL)
 DESCRIPTION = '''Python wrapper for www.diigo.com's API'''
 LONG_DESCRIPTION = DiigoApi.__doc__
 
